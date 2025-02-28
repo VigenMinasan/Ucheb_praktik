@@ -40,5 +40,28 @@ def login():
         flash("Неверные учетные данные")
         return redirect(url_for('login'))
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    error_message = None
+
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password'].encode('utf-8')
+        email = request.form['email']
+        role = request.form['role']
+
+        user_repo = UserRepository(db_session)
+        existing_user_email = user_repo.get_user_by_email(email)
+
+        if existing_user_email:
+            error_message = 'Пользователь с таким адресом электронной почты уже существует.'
+        else:
+            password_hash = bcrypt.hashpw(password, bcrypt.gensalt()).decode('utf-8')
+            user_repo.create_user(username, password_hash, email, role)
+            flash('Регистрация успешна. Пожалуйста, войдите в систему.')
+            return redirect(url_for('login'))
+
+    return render_template('register.html', error_message=error_message)
+
 if __name__ == '__main__':
     app.run(debug=True)
