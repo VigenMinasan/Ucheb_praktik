@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        form {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        textarea,
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #0056b3;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color#0056b3;
+        }
+
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #337ab7;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Профиль</h1>
+    <form method="POST" action="{{ url_for('profile', user_id=session['user_id']) }}">
+        <label for="work_experience_description">Краткое описание опыта работы:</label>
+        <textarea name="work_experience_description">{{ profile.work_experience_description if profile else '' }}</textarea>
+        <br>
+
+        <label for="years_of_experience">Количество лет опыта работы:</label>
+        <input type="number" name="years_of_experience" value="{{ profile.years_of_experience if profile else '' }}">
+        <br>
+
+        <label for="education_info">Информация об образовании:</label>
+        <textarea name="education_info">{{ profile.education_info if profile else '' }}</textarea>
+        <br>
+
+        <label for="comments">Свой комментарий:</label>
+        <textarea name="comments">{{ profile.comments if profile else '' }}</textarea>
+        <br>
+
+        <button type="submit">Сохранить</button>
+    </form>
+    <a href="{{ url_for('dashboard') }}">Назад</a>
+</body>
+</html>
