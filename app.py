@@ -195,6 +195,27 @@ def delete_project(project_id):
     return redirect(url_for('dashboard'))
 
 
+project_repo = ProjectRepository(db_session)
+
+@app.route('/withdraw/<int:project_id>', methods=['POST'])
+def withdraw_project(project_id):
+    project = project_repo.get_project_by_id(project_id)
+
+    if project:
+        project.count_chotcik += 1
+        db_session.commit()
+        print(f"Счетчик отозванных заявок для проекта {project_id} увеличен на 1. Текущий счетчик: {project.count_chotcik}")
+    else:
+        print(f"Проект с ID {project_id} не найден.")
+
+    user_id = session.get('user_id')
+
+    if user_id:
+
+        return redirect(url_for('executor_dashboard', user_id=user_id))
+    else:
+        return redirect(url_for('login'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
