@@ -2,7 +2,7 @@ from os import abort
 from flask import Flask, request, redirect, url_for, render_template, flash, session
 from sqlalchemy.orm import sessionmaker
 from database import init_db, SessionLocal
-from repositories.user_repository import UserRepository
+from repositories.user_repository import UserRepository, ProjectRepository
 import bcrypt
 
 app = Flask(__name__)
@@ -62,6 +62,19 @@ def register():
             return redirect(url_for('login'))
 
     return render_template('register.html', error_message=error_message)
+
+@app.route('/dashboard')
+def dashboard():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+
+    user_repo = UserRepository(db_session)
+    user = user_repo.get_user_by_id(user_id)
+    project_repo = ProjectRepository(db_session)
+    projects = project_repo.get_projects_for_customer(user_id) if user.role == 'customer' else project_repo.get_all_projects_for_user()
+    
+    return render_template('customer_dashboard.html', user=user, projects=projects)
 
 if __name__ == '__main__':
     app.run(debug=True)
