@@ -171,5 +171,30 @@ def add_project():
 
     return render_template('add_project.html')
 
+
+
+@app.route('/delete_project/<int:project_id>', methods=['POST'])
+def delete_project(project_id):
+    user_id_session = session.get('user_id')
+    
+    if not user_id_session:
+        return redirect(url_for('login'))
+    
+    project_repo = ProjectRepository(db_session)
+    project = project_repo.get_project_by_id(project_id)
+    
+    if project and project.customer_id == user_id_session:
+        db_session.delete(project)
+        db_session.commit()
+        # Отправляем событие project_deleted
+        socketio.emit('project_deleted', {'project_id': project_id})
+        flash('Проект успешно удалён.')
+    else:
+        flash('У вас нет прав для удаления этого проекта или проект не найден.')
+
+    return redirect(url_for('dashboard'))
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
