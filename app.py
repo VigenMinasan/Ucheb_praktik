@@ -2,12 +2,21 @@ from os import abort
 from flask import Flask, request, redirect, url_for, render_template, flash, session
 from sqlalchemy.orm import sessionmaker
 from database import init_db, SessionLocal
-from repositories.user_repository import UserRepository, ProjectRepository, ProfileRepository
+from repositories.user_repository import UserRepository, ProjectRepository, ProfileRepository, ApplicationRepository
 from models import User, Profile
 import bcrypt
+from datetime import datetime
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
+
+# Инициализация Flask-SocketIO
+socketio = SocketIO(app)
+
+@socketio.on('new_application')
+def handle_new_application(application_data):
+    emit('application_created', application_data, broadcast=True)
 
 # Инициализация базы данных
 init_db()
@@ -128,4 +137,39 @@ def profile(user_id):
             db_session.commit()
             flash('Профиль успешно создан.')
 
-    
+    return render_template('profile.html', profile=profile)
+
+@app.route('/add_project', methods=['GET', 'POST'])
+def add_project():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form['description']
+        budget = request.form['budget']
+        deadline_str = request.form['deadline']
+        deadline = datetime.fromisoformat(deadline_str)
+
+        project_repo = ProjectRepository(db_session)
+        project_repo.create_project(title, description, budget, deadline, user_id)
+
+        # Отправляем событие о новой заявке
+        application_data = {
+            'title': title,
+            'description': description,
+            'budget': budget,
+            'created_at': datetime.now().strftime('%Y-%m-%d'),  # Форматируем дату
+            'user_id': user_id
+}
+        socketio.emit('application_created', application_data)
+
+
+        flash('Проект успешно добавлен.')
+        return redirect(url_for('dashboard'))
+
+    return render_template('add_project.html')
+
+if __name__ == '__main__':
+    app.run(debug=True)
