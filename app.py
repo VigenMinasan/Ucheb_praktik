@@ -61,8 +61,6 @@ def register():
             flash('Регистрация успешна. Пожалуйста, войдите в систему.')
             return redirect(url_for('login'))
 
-    return render_template('register.html', error_message=error_message)
-
 @app.route('/dashboard')
 def dashboard():
     user_id = session.get('user_id')
@@ -74,6 +72,22 @@ def dashboard():
     project_repo = ProjectRepository(db_session)
     projects = project_repo.get_projects_for_customer(user_id) if user.role == 'customer' else project_repo.get_all_projects_for_user()
     
+    return render_template('customer_dashboard.html', user=user, projects=projects)
+
+@app.route('/executor_dashboard/<int:user_id>', methods=['GET'])
+def executor_dashboard(user_id):
+    user_repo = UserRepository(db_session)
+    user = user_repo.get_user_by_id(user_id)
+    project_repo = ProjectRepository(db_session)
+    projects = project_repo.get_all_projects()
+    return render_template('executor_dashboard.html', user=user, projects=projects)
+
+@app.route('/customer_dashboard/<int:user_id>', methods=['GET'])
+def customer_dashboard(user_id):
+    user_repo = UserRepository(db_session)
+    user = user_repo.get_user_by_id(user_id)
+    project_repo = ProjectRepository(db_session)
+    projects = project_repo.get_projects_for_customer(user_id)
     return render_template('customer_dashboard.html', user=user, projects=projects)
 
 if __name__ == '__main__':
