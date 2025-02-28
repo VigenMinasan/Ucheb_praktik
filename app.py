@@ -2,7 +2,10 @@ from os import abort
 from flask import Flask, request, redirect, url_for, render_template, flash, session
 from sqlalchemy.orm import sessionmaker
 from database import init_db, SessionLocal
-from repositories.user_repository import UserRepository, ProjectRepository, ProfileRepository, ApplicationRepository
+from repositories.user_repository import UserRepository
+from repositories.project_repository import ProjectRepository
+from repositories.profile_repository import ProfileRepository
+from repositories.application_repository import ApplicationRepository
 from models import User, Profile
 import bcrypt
 from datetime import datetime
@@ -11,18 +14,17 @@ from flask_socketio import SocketIO, emit
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-# Инициализация Flask-SocketIO
+
 socketio = SocketIO(app)
 
 @socketio.on('new_application')
 def handle_new_application(application_data):
     emit('application_created', application_data, broadcast=True)
 
-# Инициализация базы данных
 init_db()
 db_session = SessionLocal()
 
-# Функция для аутентификации пользователя
+
 def authenticate_user(username, password):
     user_repo = UserRepository(db_session)
     user = user_repo.get_user_by_username(username)
@@ -49,6 +51,22 @@ def login():
     else:
         flash("Неверные учетные данные")
         return redirect(url_for('login'))
+
+@app.route('/executor_dashboard/<int:user_id>', methods=['GET'])
+def executor_dashboard(user_id):
+    user_repo = UserRepository(db_session)
+    user = user_repo.get_user_by_id(user_id)
+    project_repo = ProjectRepository(db_session)
+    projects = project_repo.get_all_projects()
+    return render_template('executor_dashboard.html', user=user, projects=projects)
+
+@app.route('/customer_dashboard/<int:user_id>', methods=['GET'])
+def customer_dashboard(user_id):
+    user_repo = UserRepository(db_session)
+    user = user_repo.get_user_by_id(user_id)
+    project_repo = ProjectRepository(db_session)
+    projects = project_repo.get_projects_for_customer(user_id)
+    return render_template('customer_dashboard.html', user=user, projects=projects)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -86,22 +104,6 @@ def dashboard():
     
     return render_template('customer_dashboard.html', user=user, projects=projects)
 
-@app.route('/executor_dashboard/<int:user_id>', methods=['GET'])
-def executor_dashboard(user_id):
-    user_repo = UserRepository(db_session)
-    user = user_repo.get_user_by_id(user_id)
-    project_repo = ProjectRepository(db_session)
-    projects = project_repo.get_all_projects()
-    return render_template('executor_dashboard.html', user=user, projects=projects)
-
-@app.route('/customer_dashboard/<int:user_id>', methods=['GET'])
-def customer_dashboard(user_id):
-    user_repo = UserRepository(db_session)
-    user = user_repo.get_user_by_id(user_id)
-    project_repo = ProjectRepository(db_session)
-    projects = project_repo.get_projects_for_customer(user_id)
-    return render_template('customer_dashboard.html', user=user, projects=projects)
-
 @app.route('/profile/<int:user_id>', methods=['GET', 'POST'])
 def profile(user_id):
     user_id_session = session.get('user_id')
@@ -137,6 +139,9 @@ def profile(user_id):
             db_session.commit()
             flash('Профиль успешно создан.')
 
+        return redirect(url_for('profile', user_id=user_id))
+
+    profile = profile_repo.get_profile_by_user_id(user_id)
     return render_template('profile.html', profile=profile)
 
 @app.route('/add_project', methods=['GET', 'POST'])
@@ -173,6 +178,12 @@ def add_project():
 
 
 
+@app.route('/logout')
+def logout():
+    session.pop('user_id', None) 
+    flash('Вы вышли из системы.')  
+    return redirect(url_for('login'))
+
 @app.route('/delete_project/<int:project_id>', methods=['POST'])
 def delete_project(project_id):
     user_id_session = session.get('user_id')
@@ -186,14 +197,13 @@ def delete_project(project_id):
     if project and project.customer_id == user_id_session:
         db_session.delete(project)
         db_session.commit()
-        # Отправляем событие project_deleted
+
         socketio.emit('project_deleted', {'project_id': project_id})
         flash('Проект успешно удалён.')
     else:
         flash('У вас нет прав для удаления этого проекта или проект не найден.')
 
     return redirect(url_for('dashboard'))
-
 
 project_repo = ProjectRepository(db_session)
 
@@ -208,19 +218,18 @@ def withdraw_project(project_id):
     else:
         print(f"Проект с ID {project_id} не найден.")
 
+
     user_id = session.get('user_id')
 
     if user_id:
 
         return redirect(url_for('executor_dashboard', user_id=user_id))
     else:
+
         return redirect(url_for('login'))
 
-@app.route('/logout')
-def logout():
-    session.pop('user_id', None)  # Удаляем user_id из сессии
-    flash('Вы вышли из системы.')  # Сообщение о выходе
-    return redirect(url_for('login'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+
+    socketio.run(app, debug=True)
+
