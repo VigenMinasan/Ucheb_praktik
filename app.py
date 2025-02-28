@@ -2,7 +2,8 @@ from os import abort
 from flask import Flask, request, redirect, url_for, render_template, flash, session
 from sqlalchemy.orm import sessionmaker
 from database import init_db, SessionLocal
-from repositories.user_repository import UserRepository, ProjectRepository
+from repositories.user_repository import UserRepository, ProjectRepository, ProfileRepository
+from models import User, Profile
 import bcrypt
 
 app = Flask(__name__)
@@ -61,6 +62,8 @@ def register():
             flash('Регистрация успешна. Пожалуйста, войдите в систему.')
             return redirect(url_for('login'))
 
+    return render_template('register.html', error_message=error_message)
+
 @app.route('/dashboard')
 def dashboard():
     user_id = session.get('user_id')
@@ -90,5 +93,39 @@ def customer_dashboard(user_id):
     projects = project_repo.get_projects_for_customer(user_id)
     return render_template('customer_dashboard.html', user=user, projects=projects)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+@app.route('/profile/<int:user_id>', methods=['GET', 'POST'])
+def profile(user_id):
+    user_id_session = session.get('user_id')
+    if not user_id_session or user_id != user_id_session:
+        return redirect(url_for('login'))
+
+    user_repo = UserRepository(db_session)
+    user = user_repo.get_user_by_id(user_id)
+    if not user:
+        abort(404)
+
+    profile_repo = ProfileRepository(db_session)
+    
+    if request.method == 'POST':
+        work_experience_description = request.form['work_experience_description']
+        years_of_experience = request.form['years_of_experience']
+        education_info = request.form['education_info']
+        comments = request.form['comments']
+
+        profile = profile_repo.get_profile_by_user_id(user_id)
+        if profile:
+            profile_repo.update_profile(profile, work_experience_description, years_of_experience, education_info, comments)
+            flash('Профиль успешно обновлён.')
+        else:
+            new_profile = Profile(
+                user_id=user_id,
+                work_experience_description=work_experience_description,
+                years_of_experience=years_of_experience,
+                education_info=education_info,
+                comments=comments
+            )
+            db_session.add(new_profile)
+            db_session.commit()
+            flash('Профиль успешно создан.')
+
+    
