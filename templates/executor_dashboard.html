@@ -91,8 +91,19 @@
                     <span>Бюджет: {{ project.budget }}</span>
                     <span>Дата создания: {{ project.created_at.strftime('%Y-%m-%d') }}</span>
                 </div>
-                <button class="button" onclick="window.location.href='{{ url_for('application', project_id=project.id) }}'">Отозваться</button>
-
+                <form action="{{ url_for('withdraw_project', project_id=project.id) }}" method="POST" onsubmit="showAlert()">  <!-- Добавлено onsubmit -->
+                    <button class="button" type="submit"
+                            {% if project.customer_id != session['user_id'] %} disabled {% endif %}>
+                        Отозваться
+                    </button>
+                </form>
+                
+                <script>
+                    function showAlert() {
+                        alert("Заявка отправлена");
+                    }
+                </script>
+                </form>
             </div>
         {% else %}
             <div class="project-card">
