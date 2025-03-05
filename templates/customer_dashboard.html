@@ -1,120 +1,121 @@
-    <!DOCTYPE html>
-    <html lang="ru">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Панель Заказчика</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                background-color: #f4f4f4;
-                margin: 0;
-                padding: 20px;
-            }
-            h1 {
-                text-align: center;
-                color: #333;
-            }
-            h2 {
-                text-align: center;
-                color: #555;
-            }
-            nav {
-                text-align: center;
-                margin: 20px 0;
-            }
-            nav a {
-                text-decoration: none;
-                color: #007bff;
-                font-weight: bold;
-                margin: 0 15px;
-            }
-            nav a:hover {
-                text-decoration: underline;
-            }
-            h3 {
-                text-align: center;
-                color: #333;
-                margin-top: 40px;
-            }
-            .project-container {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 20px;
-                justify-content: center;
-            }
-            .project-card {
-                border: 1px solid #ccc;
-                border-radius: 8px;
-                padding: 15px;
-                width: 300px;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                background-color: white;
-                transition: transform 0.2s;
-            }
-            .project-card:hover {
-                transform: scale(1.05);
-            }
-            .button {
-                width: 100%;
-                padding: 10px;
-                margin-top: 15px;
-                border: none;
-                background-color: #007bff;
-                color: white;
-                font-size: 16px;
-                border-radius: 5px;
-                cursor: pointer;
-                transition: background-color 0.3s;
-            }
-            .button:hover {
-                background-color: #0056b3;
-            }
-        </style>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
-    </head>
-    <body>
-        <h1>Панель Заказчика</h1>
-        <h2>Добро пожаловать, {{ user.username }}!</h2>
-        <nav>
-            <a href="{{ url_for('profile', user_id=session['user_id']) }}">Мой профиль</a>
-            <a href="{{ url_for('add_project') }}">Добавить проект</a>
-        </nav>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель Заказчика</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        h2 {
+            text-align: center;
+            color: #555;
+        }
+        nav {
+            text-align: center;
+            margin: 20px 0;
+        }
+        nav a {
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+            margin: 0 15px;
+        }
+        nav a:hover {
+            text-decoration: underline;
+        }
+        h3 {
+            text-align: center;
+            color: #333;
+            margin-top: 40px;
+        }
+        .project-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        .project-card {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 15px;
+            width: 300px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background-color: white;
+            transition: transform 0.2s;
+        }
+        .project-card:hover {
+            transform: scale(1.05);
+        }
+        .button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 15px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+</head>
+<body>
+    <h1>Панель Заказчика</h1>
+    <h2>Добро пожаловать, {{ user.username }}!</h2>
+    <nav>
+        <a href="{{ url_for('profile', user_id=session['user_id']) }}">Мой профиль</a>
+        <a href="{{ url_for('add_project') }}">Добавить проект</a>
+    </nav>
 
-        <h3>Ваши проекты:</h3>
-        <div class="project-container">
-            {% for project in projects %}
-                <div class="project-card" id="project-{{ project.id }}">
-                    <h3 style="text-align: center;">{{ project.title }}</h3>
-                    <p style="text-align: center; color: #555;">Описание: {{ project.description }}</p>
-                    <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-                        <span>Бюджет: {{ project.budget }}</span>
-                        <span>Дата создания: {{ project.created_at.strftime('%Y-%m-%d') }}</span>
-                    </div>
-                    {% if project.customer_id == session['user_id'] %}
-                        <form method="POST" action="{{ url_for('delete_project', project_id=project.id) }}" style="display:inline;">
-                            <button class="button" type="submit" onclick="return confirm('Вы уверены, что хотите удалить этот проект?');">Удалить проект</button>
-                        </form>
-                    {% endif %}
+    <h3>Ваши проекты:</h3>
+    <div class="project-container">
+        {% for project in projects %}
+            <div class="project-card" id="project-{{ project.id }}">
+                <h3 style="text-align: center;">{{ project.title }}</h3>
+                <p style="text-align: center; color: #555;">Описание: {{ project.description }}</p>
+                <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                    <span>Бюджет: {{ project.budget }}</span>
+                    <span>Дата создания: {{ project.created_at.strftime('%Y-%m-%d') }}</span>
                 </div>
-            {% else %}
-                <div class="project-card">
-                    <p style="text-align: center;">У вас нет проектов.</p>
-                </div>
-            {% endfor %}
-        </div>
+                <p style="text-align: center; color: #555;">Откликнувшихся: {{ project.count_chotcik }}</p>
+                {% if project.customer_id == session['user_id'] %}
+                    <form method="POST" action="{{ url_for('delete_project', project_id=project.id) }}" style="display:inline;">
+                        <button class="button" type="submit" onclick="return confirm('Вы уверены, что хотите удалить этот проект?');">Удалить проект</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="project-card">
+                <p style="text-align: center;">У вас нет проектов.</p>
+            </div>
+        {% endfor %}
+    </div>
 
-        <script type="text/javascript">
-            var socket = io.connect('http://' + document.domain + ':' + location.port);
-        
-            socket.on('project_deleted', function(data) {
-                const projectId = data.project_id;
-                const projectElement = document.getElementById(`project-${projectId}`);
-                if (projectElement) {
-                    projectElement.remove();
-                }
-            });
-        </script>
-        
-    </body>
-    </html>
+    <script type="text/javascript">
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+    
+        socket.on('project_deleted', function(data) {
+            const projectId = data.project_id;
+            const projectElement = document.getElementById(`project-${projectId}`);
+            if (projectElement) {
+                projectElement.remove();
+            }
+        });
+    </script>
+    
+</body>
+</html>
