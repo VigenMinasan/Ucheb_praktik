@@ -102,7 +102,7 @@ def dashboard():
     project_repo = ProjectRepository(db_session)
     projects = project_repo.get_projects_for_customer(user_id) if user.role == 'customer' else project_repo.get_all_projects_for_user()
     
-    return render_template('customer_dashboard.html', user=user, projects=projects)
+    return redirect(url_for('executor_dashboard', user_id=user.id) if user.role == 'executor' else url_for('customer_dashboard', user_id=user.id))
 
 @app.route('/profile/<int:user_id>', methods=['GET', 'POST'])
 def profile(user_id):
